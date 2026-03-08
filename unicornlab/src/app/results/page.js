@@ -91,7 +91,7 @@ export default function ResultsPage() {
             lineHeight: 1.6,
           }}
         >
-          The unicorn has found the suspect.
+          The unicorn has found the killer.
         </p>
       </div>
 

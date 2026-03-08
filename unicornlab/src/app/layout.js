@@ -2,7 +2,7 @@ import './globals.css';
 import Nav from '../components/Nav';
 
 export const metadata = {
-  title: 'Unicorn Labs | Forensic Intelligence System',
+  title: 'Unicorn Labs',
   description: 'BACSA Hacks - Closed Challenge Forensics Support System',
 };
 
