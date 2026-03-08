@@ -1,13 +1,6 @@
 """
-results.py
-Flask server that combines DNA + fingerprint JSON results,
-ranks suspects, and exposes them via a REST endpoint.
-
-Endpoints:
-  GET  /results        → full ranked suspect list
-  GET  /results/top    → single most probable suspect
-  POST /analyse        → re-run both analyses then return /results
-  GET  /health         → sanity check
+Relevant Endpoints:
+  POST /analyse → re-run both analyses then return /results
 """
 
 import os
@@ -18,23 +11,16 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
-# ─────────────────────────────────────────────
-# Paths
-# ─────────────────────────────────────────────
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DNA_RESULTS_PATH = os.path.join(BASE_DIR, "data", "dna_results.json")
 FP_RESULTS_PATH = os.path.join(BASE_DIR, "data", "fingerprint_results.json")
 
-# Contribution of each modality to the combined score (must sum to 1.0).
-# Fingerprint slightly outweights DNA because RANSAC inlier count is a
-# very high-confidence signal; adjust as needed.
+# weights
 DNA_WEIGHT = 0.45
 FP_WEIGHT = 0.55
 
 
-# ─────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────
 def load_json(path: str) -> dict:
     if not os.path.exists(path):
         abort(404, description=f"Result file not found: {path}. Run POST /analyse first.")
@@ -157,9 +143,6 @@ def combine_results() -> list[dict]:
     return ranked
 
 
-# ─────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────
 @app.route("/results", methods=["GET"])
 def get_results():
     """Return all suspects ranked by combined score."""
@@ -213,8 +196,5 @@ def health():
     return jsonify({"status": "ok"})
 
 
-# ─────────────────────────────────────────────
-# Entry point
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(debug=True, port=8080)

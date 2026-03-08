@@ -1,10 +1,5 @@
 """
-dna.py
-Parses crime scene + suspect FASTA files, runs Smith-Waterman LOCAL alignment
-(better than Needleman-Wunsch for degraded/noisy samples), and stores results
-to root/data/dna_results.json
 
-Improvements over the original Needleman-Wunsch starter:
   1. Smith-Waterman  — local alignment finds the best matching *region*
      rather than forcing an end-to-end alignment, which is far more
      appropriate for degraded, partial, or noisy crime-scene samples.
@@ -21,23 +16,16 @@ import re
 import json
 from Bio import SeqIO
 
-
-# ─────────────────────────────────────────────
-# Paths
-# ─────────────────────────────────────────────
-BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR      = os.path.dirname(BASE_DIR)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
 CRIME_DNA_DIR = os.path.join(ROOT_DIR, "uploads", "dna")
-OUTPUT_PATH   = os.path.join(BASE_DIR, "data", "dna_results.json")
+OUTPUT_PATH = os.path.join(BASE_DIR, "data", "dna_results.json")
 
-
-# ─────────────────────────────────────────────
-# Scoring scheme
-# ─────────────────────────────────────────────
-MATCH_SCORE    =  2
+# scores
+MATCH_SCORE = 2
 MISMATCH_SCORE = -3
-GAP_PENALTY    = -2   # per base (linear gaps)
-N_SCORE        =  0   # N vs anything: neutral (wildcard)
+GAP_PENALTY = -2
+N_SCORE = 0
 
 
 def match_cost(a: str, b: str) -> int:
@@ -50,9 +38,7 @@ def match_cost(a: str, b: str) -> int:
     return MATCH_SCORE if a == b else MISMATCH_SCORE
 
 
-# ─────────────────────────────────────────────
-# Smith-Waterman (local alignment)
-# ─────────────────────────────────────────────
+# algo
 def smith_waterman(seq1: str, seq2: str) -> int:
     """
     Smith-Waterman local alignment.
@@ -66,7 +52,6 @@ def smith_waterman(seq1: str, seq2: str) -> int:
     """
     len1, len2 = len(seq1), len(seq2)
 
-    # Swap so seq2 is always the shorter one (fewer columns to store)
     if len2 > len1:
         seq1, seq2 = seq2, seq1
         len1, len2 = len2, len1
@@ -78,9 +63,9 @@ def smith_waterman(seq1: str, seq2: str) -> int:
         curr = [0] * (len2 + 1)
         for j in range(1, len2 + 1):
             diag = prev[j - 1] + match_cost(seq1[i - 1], seq2[j - 1])
-            up   = prev[j]     + GAP_PENALTY
+            up = prev[j] + GAP_PENALTY
             left = curr[j - 1] + GAP_PENALTY
-            val  = max(0, diag, up, left)   # SW: floor at 0
+            val = max(0, diag, up, left)  # SW: floor at 0
             curr[j] = val
             if val > best:
                 best = val
@@ -89,9 +74,7 @@ def smith_waterman(seq1: str, seq2: str) -> int:
     return best
 
 
-# ─────────────────────────────────────────────
-# FASTA helpers
-# ─────────────────────────────────────────────
+# helper
 def clean_sequence(raw: str) -> str:
     """Remove whitespace; uppercase.  Keep N bases (used as wildcards)."""
     return re.sub(r"[\s]+", "", raw).upper()
@@ -126,16 +109,13 @@ def load_suspect_dna(directory: str) -> dict[str, str]:
             if "CRIME" in record.id.upper() or "CRIME" in record.description.upper():
                 continue
             name = record.id.strip()
-            seq  = clean_sequence(str(record.seq))
+            seq = clean_sequence(str(record.seq))
             if seq:
                 suspects.setdefault(name, []).append(seq)
 
     return {name: "".join(seqs) for name, seqs in suspects.items()}
 
 
-# ─────────────────────────────────────────────
-# Normalisation
-# ─────────────────────────────────────────────
 def max_possible_score(seq: str) -> int:
     """
     Theoretical maximum: every non-N base in the crime sequence matched perfectly.
@@ -144,9 +124,6 @@ def max_possible_score(seq: str) -> int:
     return sum(MATCH_SCORE for b in seq if b != "N")
 
 
-# ─────────────────────────────────────────────
-# Main analysis
-# ─────────────────────────────────────────────
 def analyse_dna() -> dict:
     """
     Compare crime-scene DNA against every suspect using Smith-Waterman.
@@ -166,21 +143,21 @@ def analyse_dna() -> dict:
 
     results: dict[str, dict] = {}
     for name, seq in suspects.items():
-        raw  = smith_waterman(crime_seq, seq)
+        raw = smith_waterman(crime_seq, seq)
         norm = round(raw / perfect, 6) if perfect > 0 else 0.0
 
         results[name] = {
-            "raw_score":        raw,
+            "raw_score": raw,
             "normalised_score": norm,
-            "crime_seq_len":    len(crime_seq),
-            "suspect_seq_len":  len(seq),
+            "crime_seq_len": len(crime_seq),
+            "suspect_seq_len": len(seq),
         }
         print(f"[DNA] {name}: raw={raw}, normalised={norm:.4f}")
 
     output = {
-        "algorithm":     "Smith-Waterman (local alignment)",
+        "algorithm": "Smith-Waterman (local alignment)",
         "crime_seq_len": len(crime_seq),
-        "suspects":      results,
+        "suspects": results,
     }
 
     with open(OUTPUT_PATH, "w") as f:
