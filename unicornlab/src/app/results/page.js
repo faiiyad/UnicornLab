@@ -1,8 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-const suspects = [];
-
 const getBarColor = (score) => {
   if (score >= 85) return '#ff2d55';
   if (score >= 55) return '#f5c800';
@@ -16,6 +14,9 @@ const getStatusStyle = (type) => {
 };
 
 export default function ResultsPage() {
+  const [suspects, setSuspects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -23,6 +24,36 @@ export default function ResultsPage() {
     const t = setTimeout(() => setMounted(true), 100);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8080/analyse', { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        setSuspects(data.suspects);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to connect to analysis server at 127.0.0.1:8080');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return (
+    <div className="page-container" style={{ paddingTop: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+      <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '12px', color: '#f5c800', letterSpacing: '0.15em' }}>
+        CONTACTING ANALYSIS SERVER...
+      </div>
+      <span className="animate-blink" style={{ color: '#f5c800', fontSize: '20px' }}>█</span>
+    </div>
+  );
+
+  if (error) return (
+    <div className="page-container" style={{ paddingTop: '140px' }}>
+      <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '12px', color: '#ff2d55', letterSpacing: '0.1em' }}>
+        ✕ {error}
+      </div>
+    </div>
+  );
 
   return (
     <div className="page-container" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
@@ -48,10 +79,7 @@ export default function ResultsPage() {
             🦄 suspects{' '}
               
           </h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span className="badge badge-danger">3 SUSPECTS</span>
-            <span className="badge badge-active">ANALYSIS COMPLETE</span>
-          </div>
+          
         </div>
         <p
           style={{
@@ -67,53 +95,7 @@ export default function ResultsPage() {
         </p>
       </div>
 
-      {/* Summary bar */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '1px',
-          background: 'rgba(245,200,0,0.06)',
-          border: '1px solid rgba(245,200,0,0.08)',
-          marginBottom: '36px',
-        }}
-      >
-        {[
-          { label: 'PRIMARY SUSPECT', value: 'SUSPECT_004', color: '#ff2d55' },
-          { label: 'FINGERPRINT MATCH', value: '94.2%', color: '#ff2d55' },
-          { label: 'DNA CONFIDENCE', value: '97.8%', color: '#ff2d55' },
-          { label: 'OVERALL SCORE', value: '96.3%', color: '#ff2d55' },
-        ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              background: 'var(--bg-card)',
-              padding: '20px 18px',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'Share Tech Mono, monospace',
-                fontSize: '20px',
-                color: s.color,
-                marginBottom: '4px',
-              }}
-            >
-              {s.value}
-            </div>
-            <div
-              style={{
-                fontFamily: 'Orbitron, sans-serif',
-                fontSize: '8px',
-                letterSpacing: '0.12em',
-                color: '#555555',
-              }}
-            >
-              {s.label}
-            </div>
-          </div>
-        ))}
-      </div>
+      
 
       {/* Suspect cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

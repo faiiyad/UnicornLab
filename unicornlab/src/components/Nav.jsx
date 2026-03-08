@@ -6,8 +6,8 @@ import { useState } from 'react';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/fingerprint', label: 'Fingerprint' },
-  { href: '/dna', label: 'DNA Analysis' },
-  { href: '/results', label: 'Results' },
+  { href: '/dna', label: 'DNA Analysis' }
+  
 ];
 
 export default function Nav() {
