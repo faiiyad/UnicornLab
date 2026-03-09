@@ -4,6 +4,8 @@
 
 The unicorn will always find who did it - as long as you provide the data!
 
+---
+
 ## How to use this app
 - #### Step 1:
   Clone the repo.
